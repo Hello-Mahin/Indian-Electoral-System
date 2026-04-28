@@ -1,19 +1,42 @@
-# Election Assistant (Indian Context)
+# VoteAssist India 🗳️
 
-An interactive, educational web application designed to help citizens understand the Indian Electoral System.
+**VoteAssist India** is an interactive Single Page Application (SPA) designed to empower citizens with robust, easy-to-digest knowledge surrounding the Indian Electoral Process. Designed for smooth performance, visual clarity, and responsiveness.
 
-## Features
-- **Interactive Guide:** Step-by-step voting process.
-- **Timeline:** Key phases of a general election.
-- **Learn Mode:** Flashcards and Quizzes on topics like EVM, VVPAT, and the Model Code of Conduct.
-- **Interactive Chatbot:** A simulated chat interface to answer common questions.
+---
 
-## Development Setup
-1. Ensure Node.js is installed.
-2. Run `npm install` to install dependencies.
-3. Run `npm run dev` to start the development server.
+## 🏗️ Architecture & Core Components
 
-## Deployment (Google Cloud Run)
-1. Build the Docker image: `docker build -t gcr.io/PROJECT_ID/election-assistant .`
-2. Push the image: `docker push gcr.io/PROJECT_ID/election-assistant`
-3. Deploy to Cloud Run: `gcloud run deploy election-assistant --image gcr.io/PROJECT_ID/election-assistant --platform managed`
+The implementation separates operations into standard modules:
+
+```mermaid
+graph TD
+    A[Voter Enters Portal] --> B{Choose Interaction}
+    B -->|Interactive Journey| C[StepByStepGuide]
+    B -->|Milestone Check| D[Timeline Phases]
+    B -->|Self Test| E[Learn State]
+    B -->|Ask Specific Queries| F[Chatbot Integration]
+
+    E -->|Vocabulary Practice| G[Flashcards Component]
+    E -->|Score Calculation| H[Quiz Evaluation]
+    
+    F -->|Tree Selection| I[Response Dispatch]
+```
+
+## 🛠️ Feature Modules
+
+1. **Voter Journey Guide (`src/components/StepByStepGuide.jsx`)**
+   Navigates through standard election steps: Voter Registration, Knowing candidates via ECI apps, locating the polling booth, and standard verification procedures.
+
+2. **Milestone Tracking (`src/components/Timeline.jsx`)**
+   Provides context for the multi-stage Lok Sabha structure.
+
+3. **Gamified Education Hub (`src/components/Flashcards.jsx` & `src/components/Quiz.jsx`)**
+   Reinforces knowledge about standard equipment configurations.
+
+## 🚀 Live Environment
+
+The app builds dynamically and updates directly at:
+🌐 **[https://election-assistant-712464373646.us-central1.run.app](https://election-assistant-712464373646.us-central1.run.app)**
+
+---
+*Created in collaboration for modern civic learning.*
