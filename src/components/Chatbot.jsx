@@ -58,8 +58,11 @@ const chatTree = {
 };
 
 const Chatbot = () => {
-  const [messages, setMessages] = useState([{ type: 'bot', content: chatTree.start.message }]);
-  const [currentNode, setCurrentNode] = useState('start');
+  const [messages, setMessages] = useState([
+    { type: 'bot', content: "Namaste! I am your interactive Election Assistant. Ask me anything about EVMs, Voter Registration, or Polling protocols!" }
+  ]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -70,22 +73,45 @@ const Chatbot = () => {
     scrollToBottom();
   }, [messages]);
 
-  const handleOptionClick = (option) => {
-    // Add user message
-    setMessages(prev => [...prev, { type: 'user', content: option.text }]);
-    
-    // Simulate thinking delay
-    setTimeout(() => {
-      const nextNode = chatTree[option.next];
-      setMessages(prev => [...prev, { type: 'bot', content: nextNode.message }]);
-      setCurrentNode(option.next);
-    }, 600);
+  const handleSendMessage = async (e) => {
+    if (e) e.preventDefault();
+    if (!inputMessage.trim() || loading) return;
+
+    const userQuery = inputMessage.trim();
+    setMessages(prev => [...prev, { type: 'user', content: userQuery }]);
+    setInputMessage('');
+    setLoading(true);
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: userQuery })
+      });
+
+      const data = await response.json();
+      if (data.error) {
+        setMessages(prev => [...prev, { type: 'bot', content: `Error: ${data.error}` }]);
+      } else {
+        setMessages(prev => [...prev, { type: 'bot', content: data.reply }]);
+      }
+    } catch (err) {
+      setMessages(prev => [...prev, { type: 'bot', content: "Unable to connect with AI services." }]);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const quickPrompts = [
+    "How do I apply for a Voter ID?",
+    "What documents are required for voting?",
+    "Tell me about the Model Code of Conduct"
+  ];
 
   return (
     <div className="animate-fade-in" style={{ maxWidth: '600px', margin: '0 auto' }}>
       <h2 className="section-title" style={{ marginBottom: '1rem' }}>Election Assistant Chat</h2>
-      <p style={{ textAlign: 'center', color: 'var(--text-secondary)', marginBottom: '2rem' }}>Interactive guide to your election queries.</p>
+      <p style={{ textAlign: 'center', color: 'var(--text-secondary)', marginBottom: '2rem' }}>Powered by Google Gemini.</p>
       
       <div className="glass-card flex-col" style={{ height: '500px', padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         
@@ -116,19 +142,46 @@ const Chatbot = () => {
               {msg.type === 'user' && <div style={{ background: 'var(--glass-border)', padding: '0.5rem', borderRadius: '50%' }}><User size={20} /></div>}
             </div>
           ))}
+          {loading && (
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <Bot size={20} color="var(--accent-color)" />
+              <div style={{ padding: '0.75rem 1rem', borderRadius: '1rem', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)' }}>
+                Thinking...
+              </div>
+            </div>
+          )}
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Options Area */}
-        <div style={{ padding: '1rem', borderTop: '1px solid var(--glass-border)', background: 'var(--glass-bg)', display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'center' }}>
-          {chatTree[currentNode]?.options?.map((opt, index) => (
+        {/* Input area */}
+        <form onSubmit={handleSendMessage} style={{ padding: '1rem', borderTop: '1px solid var(--glass-border)', background: 'var(--glass-bg)', display: 'flex', gap: '0.5rem' }}>
+          <input 
+            type="text" 
+            placeholder="Type your question..." 
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
+            disabled={loading}
+            style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', borderRadius: '9999px', padding: '0.75rem 1.5rem', color: 'var(--text-primary)', outline: 'none' }}
+          />
+          <button type="submit" className="btn btn-primary" style={{ padding: '0.75rem', borderRadius: '50%' }} disabled={loading}>
+            <Send size={20} />
+          </button>
+        </form>
+
+        {/* Quick prompts */}
+        <div style={{ padding: '0.5rem 1rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'center', background: 'rgba(0,0,0,0.2)' }}>
+          {quickPrompts.map((prompt, idx) => (
             <button 
-              key={index} 
+              key={idx} 
+              type="button"
               className="btn btn-secondary" 
-              style={{ fontSize: '0.9rem', padding: '0.5rem 1rem' }}
-              onClick={() => handleOptionClick(opt)}
+              style={{ fontSize: '0.8rem', padding: '0.25rem 0.75rem' }}
+              onClick={() => {
+                setInputMessage(prompt);
+              }}
+              disabled={loading}
             >
-              {opt.text}
+              {prompt}
             </button>
           ))}
         </div>
