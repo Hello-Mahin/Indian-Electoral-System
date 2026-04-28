@@ -59,10 +59,12 @@ const chatTree = {
 
 const Chatbot = () => {
   const [messages, setMessages] = useState([
-    { type: 'bot', content: "Namaste! I am your interactive Election Assistant. Ask me anything about EVMs, Voter Registration, or Polling protocols!" }
+    { type: 'bot', content: "Namaste! I am your interactive Election Assistant. Please provide a Gemini API Key to activate AI assistance!" }
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [apiKey, setApiKey] = useState('');
+  const [showKeyInput, setShowKeyInput] = useState(true);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -77,26 +79,35 @@ const Chatbot = () => {
     if (e) e.preventDefault();
     if (!inputMessage.trim() || loading) return;
 
+    if (!apiKey.trim()) {
+      setMessages(prev => [...prev, { type: 'bot', content: "Please provide a valid Gemini API Key above to begin chatting." }]);
+      return;
+    }
+
     const userQuery = inputMessage.trim();
     setMessages(prev => [...prev, { type: 'user', content: userQuery }]);
     setInputMessage('');
     setLoading(true);
 
     try {
-      const response = await fetch('/api/chat', {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey.trim()}`;
+      const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userQuery })
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: userQuery }] }]
+        })
       });
 
       const data = await response.json();
       if (data.error) {
-        setMessages(prev => [...prev, { type: 'bot', content: `Error: ${data.error}` }]);
+        setMessages(prev => [...prev, { type: 'bot', content: `API Error: ${data.error.message || 'Verification failed.'}` }]);
       } else {
-        setMessages(prev => [...prev, { type: 'bot', content: data.reply }]);
+        const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text || "No response generated.";
+        setMessages(prev => [...prev, { type: 'bot', content: replyText }]);
       }
     } catch (err) {
-      setMessages(prev => [...prev, { type: 'bot', content: "Unable to connect with AI services." }]);
+      setMessages(prev => [...prev, { type: 'bot', content: "Network error accessing Gemini API services." }]);
     } finally {
       setLoading(false);
     }
@@ -111,8 +122,24 @@ const Chatbot = () => {
   return (
     <div className="animate-fade-in" style={{ maxWidth: '600px', margin: '0 auto' }}>
       <h2 className="section-title" style={{ marginBottom: '1rem' }}>Election Assistant Chat</h2>
-      <p style={{ textAlign: 'center', color: 'var(--text-secondary)', marginBottom: '2rem' }}>Powered by Google Gemini.</p>
-      
+      <p style={{ textAlign: 'center', color: 'var(--text-secondary)', marginBottom: '1rem' }}>Powered by direct Google Gemini Integration.</p>
+
+      {/* API Key Input */}
+      {showKeyInput && (
+        <div className="glass-card" style={{ padding: '1rem', marginBottom: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <input 
+            type="password" 
+            placeholder="Enter Gemini API Key..." 
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+            style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', borderRadius: '4px', padding: '0.5rem', color: 'var(--text-primary)' }}
+          />
+          <button className="btn btn-primary" onClick={() => setShowKeyInput(false)} style={{ fontSize: '0.8rem', padding: '0.5rem 1rem' }}>
+            Save Key
+          </button>
+        </div>
+      )}
+
       <div className="glass-card flex-col" style={{ height: '500px', padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         
         {/* Chat Area */}
